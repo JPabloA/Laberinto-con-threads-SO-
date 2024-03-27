@@ -9,6 +9,7 @@ enum Direction {
 enum CellState {
     EMPTY,
     BLOCK,
+    ALREADY_CHECK,
     EXIT
 };
 
@@ -21,6 +22,7 @@ enum SnakeState {
 // Single cell of the labyrinth
 typedef struct Cell {
     enum CellState state;
+    Direction[4] checked_directions;
 } Cell;
 
 // Labyrinth structure
