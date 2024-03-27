@@ -1,29 +1,32 @@
 #include <stdbool.h>
 #include <pthread.h>
 
+#define MAX_NUM_DIRECTION 4
+
 // Enum: Possibles directions
-enum Direction {
+typedef enum Direction {
     UP, DOWN, LEFT, RIGHT
-};
+} Direction;
 
 // Enum: State of a single labyrinth cell
-enum CellState {
+typedef enum CellState {
     EMPTY,
     BLOCK,
-    ALREADY_CHECK,
+    ALREADY_CHECKED,
     EXIT
-};
+} CellState;
 
 // Enum: State of a snake
-enum SnakeState {
+typedef enum SnakeState {
     RUNNING,
     STOPPED
-};
+} SnakeState;
 
 // Single cell of the labyrinth
 typedef struct Cell {
     enum CellState state;
-    enum Direction checked_directions[4];
+    enum Direction checked_directions[ MAX_NUM_DIRECTION ];
+    int num_checked_directions;           // Inicia en 0
 } Cell;
 
 // Labyrinth structure
@@ -59,9 +62,33 @@ typedef struct PriorityQueue {
 // Ver la "estructura" para guardar/manejar quien recorre el laberinto
 // Hacer las funciones que hagan el recorrido del laberinto 
 
-
-// >>> Cambiar el 999 por el rows|cols del laberinto
+// >>> No sé como se vaya a manejar el laberinto
 Labyrinth labyrinth;
+
+// Check if an specific cell is available
+bool isCellAvailable(CellState state) {
+    return state == EMPTY || state == ALREADY_CHECKED;
+}
+
+bool isCellDirectionAvailable(Cell* cell, Direction direction) {
+    int max_num = cell->num_checked_directions;
+
+    for (int i = 0; i < max_num; ++i) {
+        if (cell->checked_directions[i] == direction) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void updateCellState(Cell* cell, Direction new_direction) {
+    if (isCellDirectionAvailable(cell, new_direction)) {
+        return;
+    }
+
+    cell->checked_directions[ cell->num_checked_directions ] = new_direction;
+    cell->num_checked_directions++;
+}
 
 //Set the new snake position
 void moveSnake(Snake* snake) {
@@ -80,15 +107,17 @@ void moveSnake(Snake* snake) {
         new_y += movement;
     }
 
-    // Check if the snake has left the labyrinth
-    if (new_x < 0 || new_x > labyrinth.cols || new_y < 0 || new_y > labyrinth.rows) {
+    // Check if the snake has left the labyrinth || cell has been traverse already
+    if (new_x < 0 || new_x > labyrinth.cols || new_y < 0 || new_y > labyrinth.rows || !isCellDirectionAvailable(&labyrinth.matrix[new_y][new_x], snake->direction)) {
         snake->state = STOPPED;
-        return;
+        return; // Terminate thread
     }
 
     // Set the new snake position
     snake->x = new_x;
     snake->y = new_y;
+    // Update the cell with the snake direction
+    updateCellState(&labyrinth.matrix[new_y][new_x], snake->direction);
 
     // Check if adyacent cell are empty -> Create new thread
     int x1 = new_x - 1;
@@ -96,25 +125,28 @@ void moveSnake(Snake* snake) {
     int y1 = new_y - 1;
     int y2 = new_y + 1;
 
-    bool left_empty  = x1 >= 0 && labyrinth.matrix[new_y][x1].state == EMPTY;
-    bool right_empty = x2 < labyrinth.cols && labyrinth.matrix[new_y][x2].state == EMPTY;
-    bool up_empty    = y1 >= 0 && labyrinth.matrix[y1][new_x].state == EMPTY;
-    bool down_empty  = y2 < labyrinth.rows && labyrinth.matrix[y2][new_x].state == EMPTY;
+    bool left_empty  = x1 >= 0 && isCellAvailable(labyrinth.matrix[new_y][x1].state);
+    bool right_empty = x2 < labyrinth.cols && isCellAvailable(labyrinth.matrix[new_y][x2].state);
+    bool up_empty    = y1 >= 0 && isCellAvailable(labyrinth.matrix[y1][new_x].state);
+    bool down_empty  = y2 < labyrinth.rows && isCellAvailable(labyrinth.matrix[y2][new_x].state);
 
-    if (left_empty) {
-        // Create thread (x1, y, LEFT)
+    if (snake->direction == UP || snake->direction == DOWN) {
+        if (left_empty && isCellDirectionAvailable(&labyrinth.matrix[new_y][x1], LEFT)) {
+            // Create thread (x1, y, LEFT)
+        }
+        if (right_empty && isCellDirectionAvailable(&labyrinth.matrix[new_y][x2], RIGHT)) {
+            // Create thread (x2, y, RIGHT)
+        }
     }
-    if (right_empty) {
-        // Create thread (x2, y, RIGHT)
-    }
-    if (up_empty) {
-        // Create thread (x, y1, UP)
-    }
-    if (down_empty) {
-        // Create thread (x, y2, DOWN)
+    else if (snake->direction == RIGHT || snake->direction == LEFT) {
+        if (up_empty && isCellDirectionAvailable(&labyrinth.matrix[y1][new_x], UP)) {
+            // Create thread (x, y1, UP)
+        }
+        if (down_empty && isCellDirectionAvailable(&labyrinth.matrix[y2][new_x], DOWN)) {
+            // Create thread (x, y2, DOWN)
+        }
     }
 }
-
 
 int main() {
     /* code */
