@@ -2,15 +2,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
+
+#include "file.c"
 #include "utilities.h"
 
-
-// Hacer la matriz de celdas (Laberinto)
-// Ver la "estructura" para guardar/manejar quien recorre el laberinto
-// Hacer las funciones que hagan el recorrido del laberinto 
-
-// >>> No sé como se vaya a manejar el laberinto
-// Labyrinth labyrinth;
 
 void moveSnake(Snake* snake, Labyrinth* labyrinth);
 
@@ -86,14 +81,12 @@ void createAdjacentThreads(Snake* snake, int new_x, int new_y, Labyrinth* labyri
 
     if (snake->direction == UP || snake->direction == DOWN) {
         if (left_empty && checkCellDirection(&(*labyrinth).matrix[new_y][x1], LEFT)) {
-            printf("Generando snake IZQUIERDA\n");
             // Create thread (x1, y, LEFT)
             Snake snake = createSnake(x1, new_y, LEFT);
             updateCellState(&(*labyrinth).matrix[new_y][x1], snake.direction);
             moveSnake(&snake, labyrinth);
         }
         if (right_empty && checkCellDirection(&(*labyrinth).matrix[new_y][x2], RIGHT)) {
-            printf("Generando snake DERECHA\n");
             // Create thread (x2, y, RIGHT)
             Snake snake = createSnake(x2, new_y, RIGHT);
             updateCellState(&(*labyrinth).matrix[new_y][x2], snake.direction);
@@ -102,14 +95,12 @@ void createAdjacentThreads(Snake* snake, int new_x, int new_y, Labyrinth* labyri
     }
     else if (snake->direction == RIGHT || snake->direction == LEFT) {
         if (up_empty && checkCellDirection(&(*labyrinth).matrix[y1][new_x], UP)) {
-            printf("Generando snake ARRIBA\n");
             // Create thread (x, y1, UP)
             Snake snake = createSnake(new_x, y1, UP);
             updateCellState(&(*labyrinth).matrix[y1][new_x], snake.direction);
             moveSnake(&snake, labyrinth);
         }
         if (down_empty && checkCellDirection(&(*labyrinth).matrix[y2][new_x], DOWN)) {
-            printf("Generando snake ABAJO\n");
             // Create thread (x, y2, DOWN)
             Snake snake = createSnake(new_x, y2, DOWN);
             updateCellState(&(*labyrinth).matrix[y2][new_x], snake.direction);
@@ -121,10 +112,16 @@ void createAdjacentThreads(Snake* snake, int new_x, int new_y, Labyrinth* labyri
 // Initialize the snake movement
 void moveSnake(Snake* snake, Labyrinth* labyrinth) {
     // Get the current snake position
-    while (true) {
-        int new_x = snake->x;
-        int new_y = snake->y;
+    int new_x = 0;
+    int new_y = 0;
 
+    while (true) {
+        new_x = snake->x;
+        new_y = snake->y;
+
+        updateCellState(&(*labyrinth).matrix[new_y][new_x], snake->direction);
+        createAdjacentThreads(snake, new_x, new_y, labyrinth);
+        
         calculateNewPosition(snake->direction, &new_x, &new_y);
 
         // Check if the snake has left the labyrinth || cell has been traverse already
@@ -132,14 +129,11 @@ void moveSnake(Snake* snake, Labyrinth* labyrinth) {
             snake->state = STOPPED;
             return; // Terminate thread
         }
-
+        
         // Set the new snake position
         // Update the cell with the snake direction
         snake->x = new_x;
         snake->y = new_y;
-        updateCellState(&(*labyrinth).matrix[new_y][new_x], snake->direction);
-
-        createAdjacentThreads(snake, new_x, new_y, labyrinth);
     }
 
 }
@@ -147,123 +141,61 @@ void moveSnake(Snake* snake, Labyrinth* labyrinth) {
 
 
 
-
-
-// Función para crear una matriz de celdas
-Cell** createMatrix(int rows, int cols) {
-    Cell** matrix = (Cell**)malloc(rows * sizeof(Cell*));
-    if (matrix == NULL) {
-        // Manejar el error si la asignación de memoria falla
-        return NULL;
-    }
-    for (int i = 0; i < rows; i++) {
-        matrix[i] = (Cell*)malloc(cols * sizeof(Cell));
-        if (matrix[i] == NULL) {
-            // Manejar el error si la asignación de memoria falla
-            return NULL;
-        }
-    }
-    return matrix;
-}
-
-// Función para inicializar la matriz del laberinto
-void initializeLabyrinth(Labyrinth* labyrinth, int rows, int cols) {
-    labyrinth->rows = rows;
-    labyrinth->cols = cols;
-    labyrinth->matrix = createMatrix(rows, cols);
-
-    // Rellenar la matriz con celdas vacías
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            labyrinth->matrix[i][j].state = (
-                i == 0 ||
-                i == (rows - 1) ||
-                j == 0 ||
-                j == (cols - 1) ||
-                (i == ((rows / 2) - 1) && (j != (cols / 2) && j != 1)) ||
-                (i == ((rows / 2) + 1) && (j != (cols / 2) && j != 1)) ||
-                (j == ((cols / 2) - 1) && (i != (rows / 2))) ||
-                (j == ((cols / 2) + 1) && (i != (rows / 2))) ||
-                (j == ((cols / 2) - 5) && (i != (rows / 2)))
-            ) ? BLOCK : EMPTY;
-            labyrinth->matrix[i][j].num_checked_directions = 0;
-        }
-    }
-}
-
-// Función para obtener el nombre asociado a un estado de celda
-const char* cellStateToString(enum CellState state) {
-    switch (state) {
-        case EMPTY:
-            return "EMPTY";
-        case BLOCK:
-            return "BLOCK";
-        case ALREADY_CHECKED:
-            return "ALREADY CHECKED";
-        default:
-            return "EXIT";
-    }
-}
-
-void printearLaberinto(Labyrinth* lab) {
-    for (int i = 0; i < lab->rows; i++) {
-        for (int j = 0; j < lab->cols; j++) {
-
-            if (lab->matrix[i][j].state == BLOCK) {
-                printf("#");
-                continue;
-            }
-
-            if (lab->matrix[i][j].num_checked_directions == 0) {
-                printf(" ");
-                continue;
-            }
-
-            switch (lab->matrix[i][j].checked_directions[0]) {
-                case UP:
-                    printf("^");
-                    break;
-                case DOWN:
-                    printf("v");
-                    break;
-                case LEFT:
-                    printf("<");
-                    break;
-                default:
-                    printf(">");
-                    break;
-                // Puedes agregar más casos según tus necesidades
-            }
-        }
-        printf("\n");
-    }
-}
 
 int main() {
     // Crear un laberinto de 5 filas y 5 columnas
-    Labyrinth lab;
+    // Labyrinth lab;
+    // Snake snake;
+
+    // snake.x = 7;
+    // snake.y = 1;
+    // snake.checked_spaces = 0;
+    // snake.state = RUNNING;
+    // snake.direction = DOWN;
+
+    // printLabyrinth(&lab);
+
+
+    // initializeLabyrinth(&lab, 15, 15);
+    // updateCellState(&(lab.matrix[snake.y][snake.x]), snake.direction);
+
+    // // Aquí puedes continuar trabajando con tu laberinto...
+    // moveSnake(&snake, &lab);
+
+    // printearLaberinto(&lab);
+
+
+    // // Liberar memoria
+    // for (int i = 0; i < lab.rows; i++) {
+    //     free(lab.matrix[i]);
+    // }
+    // free(lab.matrix);
+
     Snake snake;
+    Labyrinth* labyrinth;
+    char filename[] = "maps/lab1 (Cerrado).txt"; // file route
 
-    snake.x = 7;
-    snake.y = 1;
-    snake.checked_spaces = 0;
-    snake.state = RUNNING;
-    snake.direction = DOWN;
-
-    initializeLabyrinth(&lab, 15, 15);
-    updateCellState(&(lab.matrix[snake.y][snake.x]), snake.direction);
-
-    // Aquí puedes continuar trabajando con tu laberinto...
-    moveSnake(&snake, &lab);
-
-    printearLaberinto(&lab);
-
-
-    // Liberar memoria
-    for (int i = 0; i < lab.rows; i++) {
-        free(lab.matrix[i]);
+    // read the labirynth from the file
+    labyrinth = readLabyrinthFromFile(filename);
+    if (labyrinth == NULL) {
+        printf("Error reading the maze file.\n");
+        return 1;
     }
-    free(lab.matrix);
+    printLabyrinth(labyrinth);
+    printf("\n");
+
+    snake = createSnake(0, 0, DOWN);
+    moveSnake(&snake, labyrinth);
+
+    // to print labyrinth
+    printLabyrinth(labyrinth);
+
+    // here we can iterate over the labyrinth struct
+
+    // ...
+
+    // to free the memory used by the labyrinth
+    freeLabyrinth(labyrinth);
 
     return 0;
 }

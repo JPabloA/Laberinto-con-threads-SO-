@@ -68,6 +68,23 @@ void freeLabyrinth(Labyrinth* labyrinth) {
 void printLabyrinth(Labyrinth *labyrinth) {
     for (int i = 0; i < labyrinth->rows; i++) {
         for (int j = 0; j < labyrinth->cols; j++) {
+            if ( labyrinth->matrix[i][j].num_checked_directions > 0) {
+                switch (labyrinth->matrix[i][j].checked_directions[0]) {
+                    case UP:
+                        printf("^");
+                        break;
+                    case DOWN:
+                        printf("v");
+                        break;
+                    case LEFT:
+                        printf("<");
+                        break;
+                    default:
+                        printf(">");
+                        break;
+                }
+                continue;
+            }
             switch (labyrinth->matrix[i][j].state) {
                 case BLOCK:
                     printf("*");
@@ -85,28 +102,4 @@ void printLabyrinth(Labyrinth *labyrinth) {
         }
         printf("\n");
     }
-}
-
-int main() {
-    Labyrinth* labyrinth;
-    char filename[] = "maps/lab2.txt"; // file route
-
-    // read the labirynth from the file
-    labyrinth = readLabyrinthFromFile(filename);
-    if (labyrinth == NULL) {
-        printf("Error reading the maze file.\n");
-        return 1;
-    }
-
-    // to print labyrinth
-    printLabyrinth(labyrinth);
-
-    // here we can iterate over the labyrinth struct
-
-    // ...
-
-    // to free the memory used by the labyrinth
-    freeLabyrinth(labyrinth);
-
-    return 0;
 }
