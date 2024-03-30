@@ -87,7 +87,7 @@ void printLabyrinth(Labyrinth *labyrinth) {
             }
             switch (labyrinth->matrix[i][j].state) {
                 case BLOCK:
-                    printf("*");
+                    printf("\x1b[31m%c\x1b[0m", '*');
                     break;
                 case EMPTY:
                     printf(" ");

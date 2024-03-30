@@ -21,7 +21,8 @@ typedef enum CellState {
 // Enum: State of a snake
 typedef enum SnakeState {
     RUNNING,
-    STOPPED
+    STOPPED,
+    FINISHED
 } SnakeState;
 
 // Single cell of the labyrinth
@@ -29,6 +30,7 @@ typedef struct Cell {
     enum CellState state;
     enum Direction checked_directions[ MAX_NUM_DIRECTION ];
     int num_checked_directions;           // Inicia en 0
+    pthread_mutex_t mutex;  // Mutex para exclusión mutua en el acceso a la celda
 } Cell;
 
 // Labyrinth structure
@@ -46,17 +48,8 @@ typedef struct Snake {
     enum SnakeState state;
 } Snake;
 
-// Queue Node Structure
-typedef struct Node {
-    Snake snake;
-    struct Node *next;
-} Node;
-
-// Queue Structure
-typedef struct PriorityQueue {
-    Node* first;
-    Node* last;
-    pthread_mutex_t mutex;
-} PriorityQueue;
+typedef struct ThreadArgs {
+    Snake* snake;
+} ThreadArgs;
 
 #endif
