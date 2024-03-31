@@ -3,13 +3,17 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "file.c"
 #include "utilities.h"
 
 pthread_mutex_t mutex;
 pthread_t threads[100];
+pthread_t threadToPrint;
+Snake *snakes[100] = {NULL};
 int threadCounter = 1;
+int snakeCounter = 0;
 
 Labyrinth* labyrinth;
 
@@ -121,6 +125,7 @@ void createThreadSnake(int x, int y, Direction direction) {
     threadCounter++;
     pthread_mutex_unlock(&mutex);
 }
+
 // Thread function: Start the snake process
 void* startSnakeProcess(void* args) {
     ThreadArgs* params = (ThreadArgs*)args;
@@ -129,11 +134,20 @@ void* startSnakeProcess(void* args) {
     int y = params->y;
     Direction direction = params->direction;
 
-    Snake snake = createSnake(x, y, direction);
-    moveSnake(&snake);
+    // array to save snakes
+    pthread_mutex_lock(&mutex);
+    snakeCounter++;
+    snakes[snakeCounter] = malloc(sizeof(Snake));
+    *snakes[snakeCounter] = createSnake(x, y, direction);
+    pthread_mutex_unlock(&mutex);
+
+    moveSnake(snakes[snakeCounter]);
 
     free(args);
+
+    return NULL;
 }
+
 // Check if adjacent spaces are available (If so -> Create thread)
 void createAdjacentThreads(Snake* snake, int new_x, int new_y) {
     int x1 = new_x - 1; int x2 = new_x + 1;
@@ -176,6 +190,7 @@ void createAdjacentThreads(Snake* snake, int new_x, int new_y) {
         }
     }
 }
+
 // Start the snake movement through the maze
 void moveSnake(Snake* snake) {
     int new_x = 0;
@@ -191,6 +206,8 @@ void moveSnake(Snake* snake) {
             snake->state = FINISHED;
             break;
         }
+
+        sleep(1);
         updateCellState(cell, snake->direction);
         createAdjacentThreads(snake, new_x, new_y);
         
@@ -202,9 +219,48 @@ void moveSnake(Snake* snake) {
         }
         
         // Set the new snake position
+        pthread_mutex_lock(&mutex);
         snake->x = new_x;
         snake->y = new_y;
+        snake->checked_spaces++;
+        pthread_mutex_unlock(&mutex);
+
     }
+}
+
+void* printTheLabyrinth(void* args){
+
+    while (true){
+        //printf("hola");
+        // bool flag = false;
+        sleep(1);
+
+        printf("\x1b[2J");
+        printf("\x1b[H");
+
+        pthread_mutex_lock(&mutex);
+        for (int i=0; i < 100; i++){
+            if (snakes[i]){
+                printf("fila: %d  columna: %d \n", snakes[i]->x, snakes[i]->y);
+                // if (snakes[i]->state == RUNNING)
+                // {
+                //     flag = true;
+                // }
+            }
+        }
+        pthread_mutex_unlock(&mutex);
+        
+        printf("\n");
+        printLabyrinth(labyrinth);
+        
+        // if(flag){
+        //     printf("\n");
+        //     printLabyrinth(labyrinth);
+        // }else{
+        //     break;
+        // }
+    }
+    return NULL;
 }
 
 int main() {    
@@ -222,6 +278,9 @@ int main() {
     ThreadArgs* params = createThreadParams(0, 0, DOWN);
     pthread_create(&threads[0], NULL, startSnakeProcess, (void*)params);
 
+    // Thread to print the maze
+    pthread_create(&threadToPrint, NULL, printTheLabyrinth, NULL);
+
     for (int i = 0; i < 100; i++) {
         if (threads[i]) {
             if (pthread_join(threads[i], NULL) != 0) {
@@ -229,13 +288,24 @@ int main() {
             }
         }
     }
+    // pthread_join(threadToPrint, NULL);
+    pthread_cancel(threadToPrint);
 
-    // to print labyrinth
-    printLabyrinth(labyrinth);
+    for (int i = 0; i < 100; i++) {
+        if (snakes[i]) {
+            printf("> %p --- %d\n", snakes[i], snakes[i]->state);
+        }
+        else {
+            printf("> %p\n", snakes[i]);
+        }
+        free(snakes[i]);
+    }
+
 
     // to free the memory used by the labyrinth
     freeLabyrinth(labyrinth);
     pthread_mutex_destroy(&mutex);
+    printf("\nTerminado\n");
 
     return 0;
 }

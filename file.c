@@ -66,6 +66,10 @@ void freeLabyrinth(Labyrinth* labyrinth) {
 }
 
 void printLabyrinth(Labyrinth *labyrinth) {
+    // printf("\x1b[2J");
+    // Set cursor position 0, 0
+    // printf("\x1b[H");
+
     for (int i = 0; i < labyrinth->rows; i++) {
         for (int j = 0; j < labyrinth->cols; j++) {
             if ( labyrinth->matrix[i][j].num_checked_directions > 0) {
