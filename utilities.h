@@ -49,7 +49,9 @@ typedef struct Snake {
 } Snake;
 
 typedef struct ThreadArgs {
-    Snake* snake;
+    int x;
+    int y;
+    Direction direction;
 } ThreadArgs;
 
 #endif
