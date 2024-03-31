@@ -9,36 +9,58 @@
 
 pthread_mutex_t mutex;
 pthread_t threads[100];
-int contador = 0;
+int threadCounter = 1;
 
 Labyrinth* labyrinth;
 
-// Function declaration
-void* moveSnake(void* snake);
+// **********************************************************
+// ***** Function Declarations                          *****
+// **********************************************************
 
-Cell* getMatrixCell(int x, int y) {
-    Cell* selected_cell = &(labyrinth->matrix[y][x]);
+Snake createSnake(int x, int y, Direction direction);
+Cell* getMatrixCell(int x, int y);
+CellState getCellState(Cell* cell);
 
-    return selected_cell;
+bool checkCellDirection(Cell* cell, Direction direction);
+bool isValidSnakePosition(Direction snake_direction, int x, int y);
+
+void moveSnake(Snake* snake);
+void updateCellState(Cell* cell, Direction new_direction);
+void calculateNewPosition(Direction snake_direction, int* new_x, int* new_y);
+void createThreadSnake(int x, int y, Direction direction);
+void createAdjacentThreads(Snake* snake, int new_x, int new_y);
+
+void* startSnakeProcess(void* args);
+
+// Create and return an snake struct object
+Snake createSnake(int x, int y, Direction direction) {
+    Snake snake;
+    snake.x = x;
+    snake.y = y;
+    snake.direction = direction;
+    snake.checked_spaces = 0;
+    snake.state = RUNNING;
+
+    return snake;
 }
-
-// Get the cell state
-bool getCellState(Cell* cell) {
-
+// Return a pointer to the matrix cell coordinates specified
+Cell* getMatrixCell(int x, int y) {
+    return &(labyrinth->matrix[y][x]);
+}
+// Return the cell state
+CellState getCellState(Cell* cell) {
     pthread_mutex_lock(&mutex);
     CellState state = cell->state;
     pthread_mutex_unlock(&mutex);
 
     return state;
 }
-
-// Check if cell has the direction already registered
+// Check the verified cell directions
 bool checkCellDirection(Cell* cell, Direction direction) {
     bool result = true;
     
     pthread_mutex_lock(&mutex);
     int max_num = cell->num_checked_directions;
-
     for (int i = 0; i < max_num; ++i) {
         if (cell->checked_directions[i] == direction) {
             result = false;
@@ -46,23 +68,27 @@ bool checkCellDirection(Cell* cell, Direction direction) {
         }
     }
     pthread_mutex_unlock(&mutex);
-
     return result;
 }
+// Check if the x and y coordinates are valid
+bool isValidSnakePosition(Direction snake_direction, int x, int y) {
+    Cell* cell = getMatrixCell(x, y);
 
+    return (x >= 0 && x < labyrinth->cols &&
+            y >= 0 && y < labyrinth->rows &&
+            checkCellDirection(cell, snake_direction) &&
+            (getCellState(cell) != BLOCK )) ;
+}
 // Update the cell direction array
 void updateCellState(Cell* cell, Direction new_direction) {
 
     pthread_mutex_lock(&mutex);
-
     cell->state = ALREADY_CHECKED;
     cell->checked_directions[ cell->num_checked_directions ] = new_direction;
     cell->num_checked_directions++;
-
     pthread_mutex_unlock(&mutex);
 }
-
-// Calculate the next position of the snake
+// Calculate the next position based on its direction
 void calculateNewPosition(Direction snake_direction, int* new_x, int* new_y) {
     // Set the movement direction
     int movement = (snake_direction == RIGHT || snake_direction == DOWN) ? 1 : -1;
@@ -75,53 +101,46 @@ void calculateNewPosition(Direction snake_direction, int* new_x, int* new_y) {
         *new_y += movement;
     }
 }
+// Create and return the params of a snake thread
+ThreadArgs* createThreadParams(int x, int y, Direction direction) {
+    ThreadArgs* params = malloc(sizeof(ThreadArgs));
 
-// Check if the snake position is valid (Not out of bound)
-bool isValidSnakePosition(Direction snake_direction, int x, int y) {
+    params->x = x;
+    params->y = y;
+    params->direction = direction;
 
-    Cell* cell = getMatrixCell(x, y);
-
-    return (x >= 0 && x < labyrinth->cols &&
-            y >= 0 && y < labyrinth->rows &&
-            checkCellDirection(cell, snake_direction) &&
-            ( getCellState(cell) != BLOCK )) ;
+    return params;
 }
+// Create and start the snake thread
+void createThreadSnake(int x, int y, Direction direction) {
+    ThreadArgs* params = createThreadParams(x, y, direction);
 
-Snake createSnake(int x, int y, Direction direction) {
-    Snake snake;
-    snake.x = x;
-    snake.y = y;
-    snake.direction = direction;
-    snake.checked_spaces = 0;
-    snake.state = RUNNING;
+    pthread_create(&threads[threadCounter], NULL, startSnakeProcess, (void*)params);
 
-    return snake;
+    pthread_mutex_lock(&mutex);
+    threadCounter++;
+    pthread_mutex_unlock(&mutex);
 }
+// Thread function: Start the snake process
+void* startSnakeProcess(void* args) {
+    ThreadArgs* params = (ThreadArgs*)args;
 
-void startSnakeProcess(int x, int y, Direction direction) {
-    Snake* snake = malloc( sizeof(Snake) );
-    Cell* cell = getMatrixCell(x, y);
+    int x = params->x;
+    int y = params->y;
+    Direction direction = params->direction;
 
-    *snake = createSnake(x, y, direction);
+    Snake snake = createSnake(x, y, direction);
+    moveSnake(&snake);
 
-    updateCellState( cell , snake->direction);
-
-    // Llamar a moveSnake
-    pthread_create(&threads[contador], NULL, &moveSnake, snake);
-    pthread_join(threads[contador], NULL);
+    free(args);
 }
-
-// Create the threads for the adjacent cells (If available)
+// Check if adjacent spaces are available (If so -> Create thread)
 void createAdjacentThreads(Snake* snake, int new_x, int new_y) {
-    int x1 = new_x - 1;
-    int x2 = new_x + 1;
-    int y1 = new_y - 1;
-    int y2 = new_y + 1;
+    int x1 = new_x - 1; int x2 = new_x + 1;
+    int y1 = new_y - 1; int y2 = new_y + 1;
 
-    Cell* cell1 = NULL;
-    Cell* cell2 = NULL;
+    Cell* cell1 = NULL; Cell* cell2 = NULL;
 
-    // Check if adjacent cell are empty -> Create new thread
     if (snake->direction == UP || snake->direction == DOWN) {
 
         cell1 = getMatrixCell(x1, new_y);
@@ -132,11 +151,11 @@ void createAdjacentThreads(Snake* snake, int new_x, int new_y) {
         
         if (left_empty && checkCellDirection(cell1, LEFT)) {
             // Create thread (x1, y, LEFT)
-            startSnakeProcess(x1, new_y, LEFT);
+            createThreadSnake(x1, new_y, LEFT);
         }
         if (right_empty && checkCellDirection(cell2, RIGHT)) {
             // Create thread (x2, y, RIGHT)
-            startSnakeProcess(x2, new_y, RIGHT);
+            createThreadSnake(x2, new_y, RIGHT);
         }
     }
     else if (snake->direction == RIGHT || snake->direction == LEFT) {
@@ -149,58 +168,46 @@ void createAdjacentThreads(Snake* snake, int new_x, int new_y) {
 
         if (up_empty && checkCellDirection(cell1, UP)) {
             // Create thread (x, y1, UP)
-            startSnakeProcess(new_x, y1, UP);
+            createThreadSnake(new_x, y1, UP);
         }
         if (down_empty && checkCellDirection(cell2, DOWN)) {
             // Create thread (x, y2, DOWN)
-            startSnakeProcess(new_x, y2, DOWN);
+            createThreadSnake(new_x, y2, DOWN);
         }
     }
 }
-
-// Initialize the snake movement
-void* moveSnake(void* arg) {
-    contador++;
-
-    Snake snake = *(Snake*)arg;
-
-    // Get the current snake position
+// Start the snake movement through the maze
+void moveSnake(Snake* snake) {
     int new_x = 0;
     int new_y = 0;
+    Cell* cell = NULL;
 
     while (true) {
-        new_x = snake.x;
-        new_y = snake.y;
-
-        Cell* cell = getMatrixCell(new_x, new_y);
+        new_x = snake->x;
+        new_y = snake->y;
+        cell = getMatrixCell(new_x, new_y);
 
         if ( getCellState(cell) == EXIT ) {
-            snake.state = FINISHED;
+            snake->state = FINISHED;
             break;
         }
-
-        updateCellState(cell, snake.direction);
-        createAdjacentThreads(&snake, new_x, new_y);
+        updateCellState(cell, snake->direction);
+        createAdjacentThreads(snake, new_x, new_y);
         
-        calculateNewPosition(snake.direction, &new_x, &new_y);
-
         // Check if the snake has left the labyrinth || cell has been traverse already
-        if (!isValidSnakePosition(snake.direction, new_x, new_y)) {
-            snake.state = STOPPED;
-            break; // Terminate thread
+        calculateNewPosition(snake->direction, &new_x, &new_y);
+        if (!isValidSnakePosition(snake->direction, new_x, new_y)) {
+            snake->state = STOPPED;
+            break;
         }
         
         // Set the new snake position
-        snake.x = new_x;
-        snake.y = new_y;
+        snake->x = new_x;
+        snake->y = new_y;
     }
-
-    free(arg);
 }
 
-int main() {
-    Snake snake;
-    
+int main() {    
     char filename[] = "maps/lab1 (Cerrado).txt"; // file route
 
     // read the labirynth from the file
@@ -209,16 +216,26 @@ int main() {
         printf("Error reading the maze file.\n");
         return 1;
     }
-    printLabyrinth(labyrinth);
-    printf("\n");
+    // Initialize the mutex
+    pthread_mutex_init(&mutex, NULL);
 
-    startSnakeProcess(0, 0, DOWN);
+    ThreadArgs* params = createThreadParams(0, 0, DOWN);
+    pthread_create(&threads[0], NULL, startSnakeProcess, (void*)params);
+
+    for (int i = 0; i < 100; i++) {
+        if (threads[i]) {
+            if (pthread_join(threads[i], NULL) != 0) {
+                printf("Something went wrong :(\n");
+            }
+        }
+    }
 
     // to print labyrinth
     printLabyrinth(labyrinth);
 
     // to free the memory used by the labyrinth
     freeLabyrinth(labyrinth);
+    pthread_mutex_destroy(&mutex);
 
     return 0;
 }
