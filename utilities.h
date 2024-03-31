@@ -22,7 +22,8 @@ typedef enum CellState {
 typedef enum SnakeState {
     RUNNING,
     STOPPED,
-    FINISHED
+    FINISHED,
+    NOT_INITIALIZE
 } SnakeState;
 
 // Single cell of the labyrinth
