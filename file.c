@@ -75,32 +75,32 @@ void printLabyrinth(Labyrinth *labyrinth) {
             if ( labyrinth->matrix[i][j].num_checked_directions > 0) {
                 switch (labyrinth->matrix[i][j].checked_directions[0]) {
                     case UP:
-                        printf("^");
+                        printf(" ^");
                         break;
                     case DOWN:
-                        printf("v");
+                        printf(" v");
                         break;
                     case LEFT:
-                        printf("<");
+                        printf(" <");
                         break;
                     default:
-                        printf(">");
+                        printf(" >");
                         break;
                 }
                 continue;
             }
             switch (labyrinth->matrix[i][j].state) {
                 case BLOCK:
-                    printf("\x1b[31m%c\x1b[0m", '*');
+                    printf(" \x1b[31m%c\x1b[0m", '*');
                     break;
                 case EMPTY:
-                    printf(" ");
+                    printf("  ");
                     break;
                 case EXIT:
-                    printf("/");
+                    printf(" /");
                     break;
                 default:
-                    printf(" ");
+                    printf("  ");
                     break;
             }
         }
