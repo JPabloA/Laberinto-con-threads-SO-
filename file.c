@@ -73,15 +73,16 @@ void printLabyrinth(Labyrinth *labyrinth) {
     for (int i = 0; i < labyrinth->rows; i++) {
         for (int j = 0; j < labyrinth->cols; j++) {
             if ( labyrinth->matrix[i][j].num_checked_directions > 0) {
-                switch (labyrinth->matrix[i][j].checked_directions[0]) {
+                Direction last_direction = labyrinth->matrix[i][j].checked_directions[labyrinth->matrix[i][j].num_checked_directions - 1]; // to see the last cell direction 
+                switch (last_direction) {
                     case UP:
-                        printf(" ^");
+                        printf("\x1b[34;1m%c\x1b[0m",' ^');
                         break;
                     case DOWN:
-                        printf(" v");
+                        printf("\x1b[35;1m%c\x1b[0m", ' v');
                         break;
                     case LEFT:
-                        printf(" <");
+                        printf("\x1b[33;1m%c\x1b[0m",' <');
                         break;
                     default:
                         printf(" >");
@@ -91,13 +92,13 @@ void printLabyrinth(Labyrinth *labyrinth) {
             }
             switch (labyrinth->matrix[i][j].state) {
                 case BLOCK:
-                    printf(" \x1b[31m%c\x1b[0m", '*');
+                    printf("\x1b[101m%c\x1b[0m", '*');
                     break;
                 case EMPTY:
                     printf("  ");
                     break;
                 case EXIT:
-                    printf(" /");
+                    printf("\x1b[32m%c\x1b[0m", ' /');
                     break;
                 default:
                     printf("  ");
