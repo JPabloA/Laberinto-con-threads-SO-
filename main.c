@@ -358,9 +358,18 @@ void freeAllStructures() {
     freeLabyrinth(labyrinth);
 }
 
-int main() {
+int main(int argc, char* argv[]) {
     // File route
-    char filename[] = "maps/lab9.txt";
+    char filename[50];
+
+    // to validate arguments number
+    if (argc != 2){
+        fprintf(stderr, "\nError: Incorrect number of arguments.\n\tThere is only one argument (maze name)\n\n");
+        return 1;
+    }
+
+    // to format the map file path
+    snprintf(filename, sizeof(filename), "maps/%s.txt", argv[1]);
 
     // Read the labyrinth from the file
     labyrinth = readLabyrinthFromFile(filename);
