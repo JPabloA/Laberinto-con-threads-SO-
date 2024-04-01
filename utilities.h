@@ -43,6 +43,7 @@ typedef struct Labyrinth {
 
 // Snake Structure
 typedef struct Snake {
+    int ID;
     int x, y;
     int checked_spaces;
     enum Direction direction;
