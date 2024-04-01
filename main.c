@@ -261,7 +261,7 @@ const char* getSnakeStateName(SnakeState state) {
         case STOPPED:
             return "STOPPED";
         case FINISHED:
-            return "\x1b[32;1mFINISHED\x1b[0m";
+            return "FINISHED";
         case NOT_INITIALIZE:
             return "NOT INITIALIZE";
         default:
@@ -296,7 +296,12 @@ void* printTheLabyrinth(void* args){
         printf("ID\tDireccion\tEspacios Recorridos\tEstado\n");
         for (int i=0; i < snakeCounter; i++){
             if (snakes[i]){
-                printf("0\t%s\t\t%d\t\t\t%s\n", getSnakeDirectionName(snakes[i]->direction), snakes[i]->checked_spaces ,getSnakeStateName(snakes[i]->state));
+                if (snakes[i]->state == FINISHED){
+                    printf("0\x1b[32m\t%s\t\t%d\t\t\t%s\x1b[0m\n", getSnakeDirectionName(snakes[i]->direction), snakes[i]->checked_spaces ,getSnakeStateName(snakes[i]->state));
+                }else{
+                    printf("0\t%s\t\t%d\t\t\t%s\n", getSnakeDirectionName(snakes[i]->direction), snakes[i]->checked_spaces ,getSnakeStateName(snakes[i]->state));
+                }
+                
                 if (snakes[i]->state == RUNNING)
                 {
                     flag = true;
