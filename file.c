@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "utilities.h"
 
+// to read the labyrinth from the file
 Labyrinth *readLabyrinthFromFile(char *filename)
 {
     FILE *file;
@@ -63,6 +64,7 @@ Labyrinth *readLabyrinthFromFile(char *filename)
     return labyrinth;
 }
 
+// to free memory space from labyrinth
 void freeLabyrinth(Labyrinth *labyrinth)
 {
     for (int i = 0; i < labyrinth->rows; i++)
@@ -73,6 +75,7 @@ void freeLabyrinth(Labyrinth *labyrinth)
     free(labyrinth);
 }
 
+// to print the labyrinth (This function use cell state and the last direction added to the checked_directions array to print the correct character in each space)
 void printLabyrinth(Labyrinth *labyrinth)
 {
     // printf("\x1b[H");

@@ -360,7 +360,7 @@ void freeAllStructures() {
 
 int main() {
     // File route
-    char filename[] = "maps/lab6.txt";
+    char filename[] = "maps/lab9.txt";
 
     // Read the labyrinth from the file
     labyrinth = readLabyrinthFromFile(filename);
