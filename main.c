@@ -30,7 +30,7 @@ Labyrinth* labyrinth;
 // ***** Function Declarations                          *****
 // **********************************************************
 
-Snake createSnake(int x, int y, Direction direction);
+Snake createSnake(int x, int y, Direction direction, int num_spaces);
 Cell* getMatrixCell(int x, int y);
 CellState getCellState(Cell* cell);
 
@@ -44,7 +44,7 @@ void updateCellState(Cell* cell, Direction new_direction);
 void calculateNewPosition(Direction snake_direction, int* new_x, int* new_y);
 void createAdjacentThreads(Snake* snake, int new_x, int new_y);
 void moveSnake(Snake* snake);
-void submitSnake(int x, int y, Direction direction);
+void submitSnake(int x, int y, Direction direction, int num_spaces);
 
 void* startThread(void* args);
 
@@ -53,12 +53,12 @@ void* startThread(void* args);
 // **********************************************************
 
 // Create and return an snake struct object
-Snake createSnake(int x, int y, Direction direction) {
+Snake createSnake(int x, int y, Direction direction, int num_spaces) {
     Snake snake;
     snake.x = x;
     snake.y = y;
     snake.direction = direction;
-    snake.checked_spaces = 1;
+    snake.checked_spaces = num_spaces + 1;
     snake.state = NOT_INITIALIZE;
 
     return snake;
@@ -138,11 +138,11 @@ void createAdjacentThreads(Snake* snake, int new_x, int new_y) {
         
         if (left_empty && checkCellDirection(cell1, LEFT)) {
             // Create thread (x1, y, LEFT)
-            submitSnake(x1, new_y, LEFT);
+            submitSnake(x1, new_y, LEFT, snake->checked_spaces);
         }
         if (right_empty && checkCellDirection(cell2, RIGHT)) {
             // Create thread (x2, y, RIGHT)
-            submitSnake(x2, new_y, RIGHT);
+            submitSnake(x2, new_y, RIGHT, snake->checked_spaces);
         }
     }
     else if (snake->direction == RIGHT || snake->direction == LEFT) {
@@ -155,11 +155,11 @@ void createAdjacentThreads(Snake* snake, int new_x, int new_y) {
 
         if (up_empty && checkCellDirection(cell1, UP)) {
             // Create thread (x, y1, UP)
-            submitSnake(new_x, y1, UP);
+            submitSnake(new_x, y1, UP, snake->checked_spaces);
         }
         if (down_empty && checkCellDirection(cell2, DOWN)) {
             // Create thread (x, y2, DOWN)
-            submitSnake(new_x, y2, DOWN);
+            submitSnake(new_x, y2, DOWN, snake->checked_spaces);
         }
     }
 }
@@ -170,6 +170,8 @@ void moveSnake(Snake* snake) {
     Cell* cell = NULL;
 
     while (true) {
+        sleep(1);
+
         new_x = snake->x;
         new_y = snake->y;
         cell = getMatrixCell(new_x, new_y);
@@ -179,8 +181,7 @@ void moveSnake(Snake* snake) {
             snake->state = FINISHED;
             break;
         }
-
-        sleep(1);
+        
         updateCellState(cell, snake->direction);
         createAdjacentThreads(snake, new_x, new_y);
         
@@ -200,11 +201,11 @@ void moveSnake(Snake* snake) {
     }
 }
 // Create and add a snake to the snakes list
-void submitSnake(int x, int y, Direction direction) {
+void submitSnake(int x, int y, Direction direction, int num_spaces) {
     pthread_mutex_lock(&snake_mutex);
     
     snakes[snakeCounter] = malloc(sizeof(Snake));
-    *snakes[snakeCounter] = createSnake(x, y, direction);
+    *snakes[snakeCounter] = createSnake(x, y, direction, num_spaces);
     (*snakes[snakeCounter]).ID = snakeCounter;
     snakeCounter++;
     activeSnakeCounter++;
@@ -301,8 +302,10 @@ void* printTheLabyrinth(void* args){
     bool flag = true;
 
     while (true){
-        sleep(1);
-        system("clear");
+        usleep(1000);
+        printf("\x1b[H");
+        printf("\x1b[J");
+        // system("clear");
 
         flag = false;
 
@@ -316,7 +319,7 @@ void* printTheLabyrinth(void* args){
                 }else{
                     printf(" %d\t%s\t\t%d\t\t\t%s\n", snakes[i]->ID, getSnakeDirectionName(snakes[i]->direction), snakes[i]->checked_spaces ,getSnakeStateName(snakes[i]->state));
                 }
-                if (snakes[i]->state == RUNNING)
+                if (snakes[i]->state == RUNNING || snakes[i]->state == NOT_INITIALIZE)
                 {
                     flag = true;
                 }
@@ -355,7 +358,7 @@ void freeAllStructures() {
     freeLabyrinth(labyrinth);
 }
 
-int main() {    
+int main() {
     // File route
     char filename[] = "maps/lab6.txt";
 
@@ -367,7 +370,7 @@ int main() {
     }
 
     // Add the initial snake to the snake list
-    submitSnake(0, 0, DOWN);
+    submitSnake(0, 0, DOWN, 0);
     // Initialize all pthread necessary structures
     initPthreadStructures();
 
@@ -375,8 +378,7 @@ int main() {
     for (int i = 0; i < THREAD_NUMBER; i++) {
         pthread_create(&threads[i], NULL, &startThread, NULL);
     }
-    pthread_create(&threadToPrint, NULL, printTheLabyrinth, NULL);
-    
+    pthread_create(&threadToPrint, NULL, printTheLabyrinth, NULL);    
     // Join all pthreads (Maze and printer)
     for (int i = 0; i < THREAD_NUMBER; i++) {
         pthread_join(threads[0], NULL);
