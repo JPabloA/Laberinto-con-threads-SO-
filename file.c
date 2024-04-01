@@ -66,39 +66,62 @@ void freeLabyrinth(Labyrinth* labyrinth) {
 }
 
 void printLabyrinth(Labyrinth *labyrinth) {
-    // printf("\x1b[2J");
-    // Set cursor position 0, 0
-    // printf("\x1b[H");
+    printf("\x1b[H");
+    printf("\x1b[J");
 
     for (int i = 0; i < labyrinth->rows; i++) {
         for (int j = 0; j < labyrinth->cols; j++) {
-            if ( labyrinth->matrix[i][j].num_checked_directions > 0) {
-                Direction last_direction = labyrinth->matrix[i][j].checked_directions[labyrinth->matrix[i][j].num_checked_directions - 1]; // to see the last cell direction 
-                switch (last_direction) {
-                    case UP:
-                        printf("\x1b[34;1m%c\x1b[0m",' ^');
-                        break;
-                    case DOWN:
-                        printf("\x1b[35;1m%c\x1b[0m", ' v');
-                        break;
-                    case LEFT:
-                        printf("\x1b[33;1m%c\x1b[0m",' <');
-                        break;
-                    default:
-                        printf(" >");
-                        break;
-                }
-                continue;
+        if (labyrinth->matrix[i][j].num_checked_directions > 0) {
+            Direction last_direction = labyrinth->matrix[i][j].checked_directions[labyrinth->matrix[i][j].num_checked_directions - 1];
+
+            char character;
+            int color_code;
+
+            switch (last_direction) {
+                case UP:
+                    character = '^';
+                    break;
+                case DOWN:
+                    character = 'v';
+                    break;
+                case LEFT:
+                    character = '<';
+                    break;
+                default:
+                    character = '>';
+                    break;
             }
+
+            if (labyrinth->matrix[i][j].state == EXIT) {
+                color_code = 32; // green color
+            } else {
+                if (character == 'v'){
+                    color_code = 34; // blue color
+                }
+                else if (character == '^') {
+                    color_code = 36; // cian color
+                }
+                else if (character == '>') {
+                    color_code = 37; // gray color
+                }
+                else{
+                    color_code = 33; // yellow color
+                }
+            }
+            printf("\x1b[%d;1m %c\x1b[0m", color_code, character);
+        } else {
+            int color_code;
             switch (labyrinth->matrix[i][j].state) {
                 case BLOCK:
-                    printf("\x1b[101m%c\x1b[0m", '*');
+                    color_code = 91; // Red color
+                    printf("\x1b[%dm%s\x1b[0m", color_code, " *");
                     break;
                 case EMPTY:
                     printf("  ");
                     break;
                 case EXIT:
-                    printf("\x1b[32m%c\x1b[0m", ' /');
+                    color_code = 32; // Green color
+                    printf("\x1b[%dm%s\x1b[0m", color_code, " /");
                     break;
                 default:
                     printf("  ");
