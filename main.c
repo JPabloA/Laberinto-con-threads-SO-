@@ -53,7 +53,7 @@ Snake createSnake(int x, int y, Direction direction) {
     snake.x = x;
     snake.y = y;
     snake.direction = direction;
-    snake.checked_spaces = 0;
+    snake.checked_spaces = 1;
     snake.state = NOT_INITIALIZE;
 
     return snake;
@@ -116,17 +116,6 @@ void calculateNewPosition(Direction snake_direction, int* new_x, int* new_y) {
         *new_y += movement;
     }
 }
-// Create and return the params of a snake thread
-ThreadArgs* createThreadParams(int x, int y, Direction direction) {
-    ThreadArgs* params = malloc(sizeof(ThreadArgs));
-
-    params->x = x;
-    params->y = y;
-    params->direction = direction;
-
-    return params;
-}
-
 // Check if adjacent spaces are available (If so -> Create thread)
 void createAdjacentThreads(Snake* snake, int new_x, int new_y) {
     int x1 = new_x - 1; int x2 = new_x + 1;
@@ -169,7 +158,6 @@ void createAdjacentThreads(Snake* snake, int new_x, int new_y) {
         }
     }
 }
-
 // Start the snake movement through the maze
 void moveSnake(Snake* snake) {
     int new_x = 0;
@@ -206,7 +194,7 @@ void moveSnake(Snake* snake) {
         pthread_mutex_unlock(&snake_mutex);
     }
 }
-
+// Create and add a snake to the snakes list
 void submitSnake(int x, int y, Direction direction) {
     pthread_mutex_lock(&snake_mutex);
     snakes[snakeCounter] = malloc(sizeof(Snake));
@@ -216,9 +204,9 @@ void submitSnake(int x, int y, Direction direction) {
     pthread_mutex_unlock(&snake_mutex);
     pthread_cond_signal(&cond_searchSnake);
 }
-
+// Thread Function: Loop to the snake list to start the snake movement
 void* startThread(void* args) {
-    printf("Iniciando...\n");
+    printf("Iniciando thread...\n");
 
     while (true) {
         bool found = false;
@@ -266,32 +254,32 @@ void* startThread(void* args) {
     return NULL;
 }
 
-// const char* getSnakeStateName(SnakeState state) {
-//     switch (state) {
-//         case RUNNING:
-//             return "RUNNING";
-//         case STOPPED:
-//             return "STOPPED";
-//         case FINISHED:
-//             return "FINISHED";
-//         case NOT_INITIALIZE:
-//             return "NOT INITIALIZE";
-//         default:
-//             return "NOT IDENTIFIED";
-//     }
-// }
-// const char* getSnakeDirectionName(Direction direction) {
-//     switch (direction) {
-//         case UP:
-//             return "UP";
-//         case DOWN:
-//             return "DOWN";
-//         case LEFT:
-//             return "LEFT";
-//         default:
-//             return "RIGHT";
-//     }
-// }
+const char* getSnakeStateName(SnakeState state) {
+    switch (state) {
+        case RUNNING:
+            return "RUNNING";
+        case STOPPED:
+            return "STOPPED";
+        case FINISHED:
+            return "\x1b[32;1mFINISHED\x1b[0m";
+        case NOT_INITIALIZE:
+            return "NOT INITIALIZE";
+        default:
+            return "NOT IDENTIFIED";
+    }
+}
+const char* getSnakeDirectionName(Direction direction) {
+    switch (direction) {
+        case UP:
+            return "UP";
+        case DOWN:
+            return "DOWN";
+        case LEFT:
+            return "LEFT";
+        default:
+            return "RIGHT";
+    }
+}
 
 void* printTheLabyrinth(void* args){
     bool flag = true;
@@ -300,13 +288,15 @@ void* printTheLabyrinth(void* args){
         flag = false;
         sleep(1);
 
-        // printLabyrinth(labyrinth);
+        // printf("\x1b[H");
+        // printf("\x1b[J");
+        system("clear");
 
         pthread_mutex_lock(&snake_mutex);
-        // printf("ID\tDireccion\tEspacios Recorridos\tEstado\n");
+        printf("ID\tDireccion\tEspacios Recorridos\tEstado\n");
         for (int i=0; i < snakeCounter; i++){
             if (snakes[i]){
-                // printf("0\t%s\t%d\t\t%s\n", getSnakeDirectionName(snakes[i]->direction), snakes[i]->checked_spaces ,getSnakeStateName(snakes[i]->state));
+                printf("0\t%s\t\t%d\t\t\t%s\n", getSnakeDirectionName(snakes[i]->direction), snakes[i]->checked_spaces ,getSnakeStateName(snakes[i]->state));
                 if (snakes[i]->state == RUNNING)
                 {
                     flag = true;
@@ -314,6 +304,7 @@ void* printTheLabyrinth(void* args){
             }
         }
         pthread_mutex_unlock(&snake_mutex);
+        printLabyrinth(labyrinth);
 
         if (!flag) {
             break;
@@ -323,7 +314,7 @@ void* printTheLabyrinth(void* args){
 }
 
 int main() {    
-    char filename[] = "maps/lab5.txt"; // file route
+    char filename[] = "maps/lab6.txt"; // file route
 
     // read the labirynth from the file
     labyrinth = readLabyrinthFromFile(filename);
