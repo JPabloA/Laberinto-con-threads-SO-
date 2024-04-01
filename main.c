@@ -312,9 +312,9 @@ void* printTheLabyrinth(void* args){
         for (int i=0; i < snakeCounter; i++){
             if (snakes[i]){
                 if (snakes[i]->state == FINISHED){
-                    printf("%d\x1b[32m\t%s\t\t%d\t\t\t%s\x1b[0m\n", snakes[i]->ID, getSnakeDirectionName(snakes[i]->direction), snakes[i]->checked_spaces ,getSnakeStateName(snakes[i]->state));
+                    printf(" \x1b[32m%d\t%s\t\t%d\t\t\t%s\x1b[0m\n", snakes[i]->ID, getSnakeDirectionName(snakes[i]->direction), snakes[i]->checked_spaces ,getSnakeStateName(snakes[i]->state));
                 }else{
-                    printf("%d\t%s\t\t%d\t\t\t%s\n", snakes[i]->ID, getSnakeDirectionName(snakes[i]->direction), snakes[i]->checked_spaces ,getSnakeStateName(snakes[i]->state));
+                    printf(" %d\t%s\t\t%d\t\t\t%s\n", snakes[i]->ID, getSnakeDirectionName(snakes[i]->direction), snakes[i]->checked_spaces ,getSnakeStateName(snakes[i]->state));
                 }
                 if (snakes[i]->state == RUNNING)
                 {
