@@ -17,7 +17,7 @@ pthread_t threads[5];
 pthread_t threadToPrint;
 pthread_cond_t cond_searchSnake;
 
-Snake *snakes[100] = { NULL };
+Snake *snakes[300] = { NULL };
 
 int snakeCounter = 0;
 int activeSnakeCounter = 0;
@@ -181,10 +181,15 @@ void moveSnake(Snake* snake) {
             snake->state = FINISHED;
             break;
         }
+        // >>> Bug fix (Sepa como)
+        if (!isValidSnakePosition(snake->direction, new_x, new_y)) {
+            snake->state = STOPPED;
+            break;
+        }
         
         updateCellState(cell, snake->direction);
         createAdjacentThreads(snake, new_x, new_y);
-        
+
         // Check if the snake has left the labyrinth || cell has been traverse already
         calculateNewPosition(snake->direction, &new_x, &new_y);
         if (!isValidSnakePosition(snake->direction, new_x, new_y)) {
@@ -219,6 +224,7 @@ void* startThread(void* args) {
     bool found = false;
     Snake* snake = NULL;
 
+    sleep(1);
     while (true) {
         found = false;
         snake = NULL;
@@ -248,6 +254,7 @@ void* startThread(void* args) {
         pthread_mutex_unlock(&snake_mutex);
         // Start snake movement
         if (found) {
+            // printf("ID: %lu --- Snake Ref: %p --- Snake ID: %d -- X: %d -- Y: %d\n", pthread_self(), snake, snake->ID, snake->x, snake->y);
             moveSnake(snake);
         }
 
@@ -302,7 +309,7 @@ void* printTheLabyrinth(void* args){
     bool flag = true;
 
     while (true){
-        usleep(1000);
+        usleep(100000);
         printf("\x1b[H");
         printf("\x1b[J");
         // system("clear");
@@ -314,10 +321,8 @@ void* printTheLabyrinth(void* args){
         printf(" ID\tDireccion\tEspacios Recorridos\tEstado\n");
         for (int i=0; i < snakeCounter; i++){
             if (snakes[i]){
-                if (snakes[i]->state == FINISHED){
+                if (snakes[i]->state == FINISHED || snakes[i]->state == RUNNING){
                     printf(" \x1b[32m%d\t%s\t\t%d\t\t\t%s\x1b[0m\n", snakes[i]->ID, getSnakeDirectionName(snakes[i]->direction), snakes[i]->checked_spaces ,getSnakeStateName(snakes[i]->state));
-                }else{
-                    printf(" %d\t%s\t\t%d\t\t\t%s\n", snakes[i]->ID, getSnakeDirectionName(snakes[i]->direction), snakes[i]->checked_spaces ,getSnakeStateName(snakes[i]->state));
                 }
                 if (snakes[i]->state == RUNNING || snakes[i]->state == NOT_INITIALIZE)
                 {
