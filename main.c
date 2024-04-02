@@ -181,20 +181,20 @@ void moveSnake(Snake* snake) {
             snake->state = FINISHED;
             break;
         }
-        // >>> Bug fix (Sepa como)
-        // if (!isValidSnakePosition(snake->direction, new_x, new_y)) {
-        //     snake->state = STOPPED;
-        // break;
-        // }
+        // ! verify if the current cell has been traversed in that direction (for adjacent snakes/threads).
+        if (!checkCellDirection(cell,snake->direction)) {
+            snake->state = STOPPED;
+            break;
+        }
+        updateCellState(cell, snake->direction);
+        createAdjacentThreads(snake, new_x, new_y);
 
         // Val para aquellos casos en los que se cree un hilo en espacio recorrido
-        if (checkCellDirection(cell,snake->direction)) {
-            updateCellState(cell, snake->direction);
-            createAdjacentThreads(snake, new_x, new_y);
-        }
+        // if (checkCellDirection(cell,snake->direction)) {
+        //     updateCellState(cell, snake->direction);
+        //     createAdjacentThreads(snake, new_x, new_y);
+        // }
         
-
-
         // Check if the snake has left the labyrinth || cell has been traverse already
         calculateNewPosition(snake->direction, &new_x, &new_y);
         if (!isValidSnakePosition(snake->direction, new_x, new_y)) {
