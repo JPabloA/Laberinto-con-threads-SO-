@@ -182,13 +182,18 @@ void moveSnake(Snake* snake) {
             break;
         }
         // >>> Bug fix (Sepa como)
-        if (!isValidSnakePosition(snake->direction, new_x, new_y)) {
-            snake->state = STOPPED;
-            break;
+        // if (!isValidSnakePosition(snake->direction, new_x, new_y)) {
+        //     snake->state = STOPPED;
+        // break;
+        // }
+
+        // Val para aquellos casos en los que se cree un hilo en espacio recorrido
+        if (checkCellDirection(cell,snake->direction)) {
+            updateCellState(cell, snake->direction);
+            createAdjacentThreads(snake, new_x, new_y);
         }
         
-        updateCellState(cell, snake->direction);
-        createAdjacentThreads(snake, new_x, new_y);
+
 
         // Check if the snake has left the labyrinth || cell has been traverse already
         calculateNewPosition(snake->direction, &new_x, &new_y);
@@ -323,6 +328,7 @@ void* printTheLabyrinth(void* args){
             if (snakes[i]){
                 if (snakes[i]->state == FINISHED || snakes[i]->state == RUNNING){
                     printf(" \x1b[32m%d\t%s\t\t%d\t\t\t%s\x1b[0m\n", snakes[i]->ID, getSnakeDirectionName(snakes[i]->direction), snakes[i]->checked_spaces ,getSnakeStateName(snakes[i]->state));
+                    //printf("\nDirecciones revisadas de la celda: %d\n", labyrinth->matrix[3][8].num_checked_directions);
                 }
                 if (snakes[i]->state == RUNNING || snakes[i]->state == NOT_INITIALIZE)
                 {
