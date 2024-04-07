@@ -412,6 +412,6 @@ int main(int argc, char* argv[]) {
     // Release all allocated memory structures
     freeAllStructures();
     
-    printf("\nTerminado\n");
+    printf("\n\tTerminado\n\n");
     return 0;
 }
