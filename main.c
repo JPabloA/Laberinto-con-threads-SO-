@@ -309,7 +309,7 @@ void* printTheLabyrinth(void* args){
     bool flag = true;
 
     while (true){
-        usleep(100000);
+        usleep(500000);
         printf("\x1b[H");
         printf("\x1b[J");
         // system("clear");
@@ -317,12 +317,14 @@ void* printTheLabyrinth(void* args){
         flag = false;
 
         // Print each snake information
+        int color_code = 0;
         pthread_mutex_lock(&snake_mutex);
         printf(" ID\tDireccion\tEspacios Recorridos\tEstado\n");
         for (int i=0; i < snakeCounter; i++){
             if (snakes[i]){
                 if (snakes[i]->state == FINISHED || snakes[i]->state == RUNNING){
-                    printf(" \x1b[32m%d\t%s\t\t%d\t\t\t%s\x1b[0m\n", snakes[i]->ID, getSnakeDirectionName(snakes[i]->direction), snakes[i]->checked_spaces ,getSnakeStateName(snakes[i]->state));
+                    color_code = (snakes[i]->state == FINISHED) ? 32 : 33;
+                    printf(" \x1b[%dm%d\t%s\t\t%d\t\t\t%s\x1b[0m\n", color_code, snakes[i]->ID, getSnakeDirectionName(snakes[i]->direction), snakes[i]->checked_spaces ,getSnakeStateName(snakes[i]->state));
                 }
                 if (snakes[i]->state == RUNNING || snakes[i]->state == NOT_INITIALIZE)
                 {
