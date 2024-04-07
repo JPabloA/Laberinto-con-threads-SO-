@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include "utilities.h"
 
+void freeLabyrinth(Labyrinth *labyrinth);
+
 // to read the labyrinth from the file
 Labyrinth *readLabyrinthFromFile(char *filename)
 {
@@ -18,8 +20,21 @@ Labyrinth *readLabyrinthFromFile(char *filename)
     }
 
     // Read the labyrinth dimensions
-    fgets(line, sizeof(line), file);
-    sscanf(line, "%d %d", &rows, &cols);
+     // Read the labyrinth dimensions
+    if (fgets(line, sizeof(line), file) == NULL || sscanf(line, "%d %d", &rows, &cols) != 2)
+    {
+        printf("Error reading labyrinth dimensions.\n");
+        fclose(file);
+        return NULL;
+    }
+
+    // Validate dimensions
+    if (rows <= 0 || cols <= 0)
+    {
+        printf("Error: Invalid labyrinth dimensions. Rows and columns must be positive integers.\n");
+        fclose(file);
+        return NULL;
+    }
 
     // Allocate memory for the labyrinth
     Labyrinth *labyrinth = (Labyrinth *)malloc(sizeof(Labyrinth));
@@ -50,8 +65,10 @@ Labyrinth *readLabyrinthFromFile(char *filename)
                 labyrinth->matrix[i][j].state = EXIT;
                 break;
             default:
-                labyrinth->matrix[i][j].state = EMPTY;
-                break;
+                printf("Error: Invalid character '%c' at position (%d, %d).\n", line[j], i + 1, j + 1);
+                fclose(file);
+                freeLabyrinth(labyrinth);
+                return NULL;
             }
             labyrinth->matrix[i][j].num_checked_directions = 0;
         }

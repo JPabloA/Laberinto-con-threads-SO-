@@ -8,12 +8,12 @@
 #include "file.c"
 #include "utilities.h"
 
-#define THREAD_NUMBER 7
+#define THREAD_NUMBER 10 // Toque esto
 
 pthread_mutex_t mutex;
 pthread_mutex_t snake_mutex;
 
-pthread_t threads[5];
+pthread_t threads[THREAD_NUMBER]; // Toque esto
 pthread_t threadToPrint;
 pthread_cond_t cond_searchSnake;
 
@@ -188,12 +188,6 @@ void moveSnake(Snake* snake) {
         }
         updateCellState(cell, snake->direction);
         createAdjacentThreads(snake, new_x, new_y);
-
-        // Val para aquellos casos en los que se cree un hilo en espacio recorrido
-        // if (checkCellDirection(cell,snake->direction)) {
-        //     updateCellState(cell, snake->direction);
-        //     createAdjacentThreads(snake, new_x, new_y);
-        // }
         
         // Check if the snake has left the labyrinth || cell has been traverse already
         calculateNewPosition(snake->direction, &new_x, &new_y);
@@ -381,6 +375,12 @@ int main(int argc, char* argv[]) {
 
     // to format the map file path
     snprintf(filename, sizeof(filename), "maps/%s.txt", argv[1]);
+
+    // Check if the file exists
+    if (access(filename, F_OK) == -1) {
+        printf("Error: The maze file '%s' does not exist.\n", filename);
+        return 1;
+    }
 
     // Read the labyrinth from the file
     labyrinth = readLabyrinthFromFile(filename);
