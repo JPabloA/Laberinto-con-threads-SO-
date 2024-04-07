@@ -1,2 +1,4 @@
 # Laberinto-con-threads-SO-
-Proyecto SO
+Integrantes:
+- José Pablo Arias Navarro
+- Deyner Navarro Badilla
